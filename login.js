@@ -34,6 +34,16 @@ function showNormalLogin() {
     setupNotice.hidden = true;
 }
 
+// Briefly shown on a fresh device while we wait to hear back from Firebase,
+// so we don't decide "no admin exists yet" before a synced account has arrived.
+function showCheckingAccount() {
+    loginTitle.textContent = "Checking account...";
+    loginSubtitle.textContent = "Loading your restaurant's account details.";
+    loginForm.hidden = true;
+    adminSetupForm.hidden = true;
+    setupNotice.hidden = true;
+}
+
 async function createFirstAdmin(event) {
     event.preventDefault();
     clearLoginError();
@@ -111,10 +121,35 @@ async function loginUser(event) {
 loginForm?.addEventListener("submit", loginUser);
 adminSetupForm?.addEventListener("submit", createFirstAdmin);
 
-if (authGetSession()) {
-    navigateAfterLogin();
-} else if (authGetUsers().length === 0) {
-    showFirstAdminSetup();
+function decideLoginView() {
+    if (authGetSession()) {
+        navigateAfterLogin();
+    } else if (authGetUsers().length === 0) {
+        showFirstAdminSetup();
+    } else {
+        showNormalLogin();
+    }
+}
+
+let loginViewDecided = false;
+function decideLoginViewOnce() {
+    if (loginViewDecided) return;
+    loginViewDecided = true;
+    decideLoginView();
+}
+
+// Wait for firebase-sync.js to finish pulling down any existing admin/staff
+// accounts before deciding whether to show "sign in" or "create first admin".
+// Without this, a brand-new device would show the admin-setup screen before
+// the synced account data has had a chance to arrive.
+showCheckingAccount();
+
+if (window.__sriTabemashouSyncDone) {
+    // firebase-sync.js already finished (e.g. cached/fast load).
+    decideLoginViewOnce();
 } else {
-    showNormalLogin();
+    window.addEventListener("sriTabemashouSyncReady", decideLoginViewOnce, { once: true });
+    // Fallback so the page never hangs: if firebase-sync.js isn't included on
+    // this page, or Firebase is slow/unreachable, proceed with local data after 4s.
+    setTimeout(decideLoginViewOnce, 4000);
 }
