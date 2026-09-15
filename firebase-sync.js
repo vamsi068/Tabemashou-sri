@@ -6,7 +6,8 @@
     const COLLECTIONS = {
         staff: "sriTabemashouStaff",
         attendance: "sriTabemashouStaffAttendance",
-        salary: "sriTabemashouSalaryPayments"
+        salary: "sriTabemashouSalaryPayments",
+        users: "sriTabemashouUsers" // login accounts created via auth.js
     };
 
     let db = null;
@@ -120,6 +121,16 @@
         });
     };
 
+    // Login accounts (username/password hash/role/permissions) created in auth.js.
+    // auth.js calls this every time authSaveUsers() runs, so any admin/staff
+    // account created on one device gets pushed up for other devices to pick up.
+    window.syncUsersToFirebase = function (records) {
+        if (!ready) return;
+        replaceCollection(COLLECTIONS.users, records, record => record.id).catch(error => {
+            console.warn("User account Firebase sync failed:", error);
+        });
+    };
+
     window.deleteStaffFromFirebase = async function (staffId) {
         if (!ready || !db) return;
         try {
@@ -170,6 +181,23 @@
                 window.syncSalaryPaymentsToFirebase(window.salaryPaymentsList);
             }
 
+            // Login accounts: pull remote down if present, otherwise push whatever
+            // this device already has (e.g. right after first-admin setup) up.
+            const remoteUsers = await loadCollection(COLLECTIONS.users, { field: "id" });
+            const localUsers = (() => {
+                try {
+                    const value = JSON.parse(localStorage.getItem("sriTabemashouUsers") || "[]");
+                    return Array.isArray(value) ? value : [];
+                } catch (_) {
+                    return [];
+                }
+            })();
+            if (remoteUsers && remoteUsers.length) {
+                localStorage.setItem("sriTabemashouUsers", JSON.stringify(remoteUsers));
+            } else if (localUsers.length) {
+                window.syncUsersToFirebase(localUsers);
+            }
+
             if (typeof window.renderStaff === "function") window.renderStaff();
             if (typeof window.updateStaffStatistics === "function") window.updateStaffStatistics();
             if (typeof window.renderStaffAttendance === "function") window.renderStaffAttendance();
@@ -181,7 +209,19 @@
     }
 
     window.addEventListener("load", async function () {
-        if (!init()) return;
-        await hydrateFromFirebase();
+        if (!init()) {
+            // No Firebase configured on this device/page: unblock anything
+            // (like login.js) that's waiting to hear whether sync happened.
+            window.__sriTabemashouSyncDone = true;
+            window.dispatchEvent(new CustomEvent("sriTabemashouSyncReady", { detail: { synced: false } }));
+            return;
+        }
+
+        try {
+            await hydrateFromFirebase();
+        } finally {
+            window.__sriTabemashouSyncDone = true;
+            window.dispatchEvent(new CustomEvent("sriTabemashouSyncReady", { detail: { synced: true } }));
+        }
     });
 })();
