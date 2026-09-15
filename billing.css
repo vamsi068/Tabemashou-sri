@@ -1,0 +1,15 @@
+@import url("common.css");
+
+/* Kitchen ticket */
+.kot-button { background:#111827; color:#fff; }
+.kot-print-area { display:none; }
+.kot-receipt { font-family: Arial, Helvetica, sans-serif; width:80mm; color:#000; background:#fff; padding:5mm; box-sizing:border-box; }
+.kot-header { text-align:center; border-bottom:2px dashed #000; padding-bottom:3mm; margin-bottom:3mm; }
+.kot-title { font-weight:800; font-size:18px; }
+.kot-brand { font-size:14px; font-weight:700; margin-top:4px; }
+.kot-number { font-size:20px; font-weight:800; margin-top:5px; }
+.kot-info { font-size:11px; line-height:1.6; margin-bottom:3mm; }
+.kot-table { width:100%; border-collapse:collapse; font-size:13px; }
+.kot-table th,.kot-table td { padding:6px 4px; border-bottom:1px solid #000; text-align:left; }
+.kot-table th:last-child,.kot-table td:last-child { text-align:right; width:20%; }
+.kot-footer { text-align:center; font-weight:700; font-size:11px; border-top:2px dashed #000; margin-top:4mm; padding-top:3mm; }

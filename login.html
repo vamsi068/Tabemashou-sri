@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sri Tabemashou - Login</title>
+<link rel="stylesheet" href="login.css">
+</head>
+<body data-page="login">
+<div class="login-shell">
+    <div class="login-brand-side">
+        <div class="brand-mark">श्री</div>
+        <h1>Sri Tabemashou</h1>
+        <p>Restaurant POS</p>
+        <div class="login-features">
+            <div>🧾 Fast Billing</div>
+            <div>👥 Staff Access Control</div>
+            <div>📊 Reports &amp; Management</div>
+        </div>
+    </div>
+
+    <div class="login-card-wrap">
+        <div class="login-card">
+            <div class="login-card-header">
+                <h2 id="loginTitle">Sign in</h2>
+                <p id="loginSubtitle">Enter your staff account to continue.</p>
+            </div>
+
+            <div id="setupNotice" class="setup-notice" hidden></div>
+            <div id="loginError" class="login-error" hidden></div>
+
+            <form id="loginForm" autocomplete="off">
+                <div class="form-field">
+                    <label for="username">Username</label>
+                    <input id="username" type="text" placeholder="Enter username" required autofocus>
+                </div>
+                <div class="form-field">
+                    <label for="password">Password</label>
+                    <input id="password" type="password" placeholder="Enter password" required>
+                </div>
+                <button class="login-button" type="submit">Sign In</button>
+            </form>
+
+            <form id="adminSetupForm" autocomplete="off" hidden>
+                <div class="form-field">
+                    <label for="adminName">Admin Name</label>
+                    <input id="adminName" type="text" placeholder="Restaurant Admin" required>
+                </div>
+                <div class="form-field">
+                    <label for="adminUsername">Admin Username</label>
+                    <input id="adminUsername" type="text" placeholder="admin" required>
+                </div>
+                <div class="form-field">
+                    <label for="adminPassword">Password</label>
+                    <input id="adminPassword" type="password" minlength="6" placeholder="Minimum 6 characters" required>
+                </div>
+                <div class="form-field">
+                    <label for="adminPasswordConfirm">Confirm Password</label>
+                    <input id="adminPasswordConfirm" type="password" minlength="6" placeholder="Re-enter password" required>
+                </div>
+                <button class="login-button" type="submit">Create Admin Account</button>
+            </form>
+
+            <div class="login-footer">
+                <span>Protected restaurant access</span>
+                <span>© Sri Tabemashou</span>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="auth.js"></script>
+<script src="login.js"></script>
+</body>
+</html>
