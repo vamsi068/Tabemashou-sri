@@ -7,8 +7,11 @@
         staff: "sriTabemashouStaff",
         attendance: "sriTabemashouStaffAttendance",
         salary: "sriTabemashouSalaryPayments",
-        users: "sriTabemashouUsers" // login accounts created via auth.js
+        users: "sriTabemashouUsers", // login accounts created via auth.js
+        settings: "sriTabemashouSettings" // restaurant/billing/tax/receipt/expenses settings
     };
+
+    const SETTINGS_DOC_ID = "main";
 
     let db = null;
     let ready = false;
@@ -100,6 +103,25 @@
         return records;
     }
 
+    // --- Single-document helpers, used for settings (not a list of records) ---
+
+    async function saveSingleDoc(collectionName, docId, data) {
+        if (!ready || !db) return;
+        await db.collection(collectionName).doc(docId).set(
+            { ...data, _syncedAt: firebase.firestore.FieldValue.serverTimestamp() },
+            { merge: true }
+        );
+    }
+
+    async function loadSingleDoc(collectionName, docId) {
+        if (!ready || !db) return null;
+        const doc = await db.collection(collectionName).doc(docId).get();
+        if (!doc.exists) return null;
+        const data = doc.data() || {};
+        delete data._syncedAt;
+        return data;
+    }
+
     window.syncStaffToFirebase = function (records) {
         if (!ready) return;
         replaceCollection(COLLECTIONS.staff, records, record => record.id).catch(error => {
@@ -128,6 +150,17 @@
         if (!ready) return;
         replaceCollection(COLLECTIONS.users, records, record => record.id).catch(error => {
             console.warn("User account Firebase sync failed:", error);
+        });
+    };
+
+    // Restaurant/billing/tax/receipt/expenses settings (single object, single doc).
+    // settings.js calls this every time savePOSSettings() runs, so any change made
+    // on one device (restaurant info, tax rates, receipt text, expenses, etc.)
+    // gets pushed up for other devices to pick up.
+    window.syncSettingsToFirebase = function (settings) {
+        if (!ready || !settings) return;
+        saveSingleDoc(COLLECTIONS.settings, SETTINGS_DOC_ID, settings).catch(error => {
+            console.warn("Settings Firebase sync failed:", error);
         });
     };
 
@@ -198,11 +231,28 @@
                 window.syncUsersToFirebase(localUsers);
             }
 
+            // Settings: pull remote down if present, otherwise push whatever this
+            // device already has (e.g. first run on a brand-new device) up.
+            const remoteSettings = await loadSingleDoc(COLLECTIONS.settings, SETTINGS_DOC_ID);
+            const localSettingsRaw = localStorage.getItem("sriTabemashouSettings");
+            if (remoteSettings && Object.keys(remoteSettings).length) {
+                localStorage.setItem("sriTabemashouSettings", JSON.stringify(remoteSettings));
+            } else if (localSettingsRaw) {
+                try {
+                    const parsedSettings = JSON.parse(localSettingsRaw);
+                    window.syncSettingsToFirebase(parsedSettings);
+                } catch (_) {
+                    // ignore malformed local settings
+                }
+            }
+
             if (typeof window.renderStaff === "function") window.renderStaff();
             if (typeof window.updateStaffStatistics === "function") window.updateStaffStatistics();
             if (typeof window.renderStaffAttendance === "function") window.renderStaffAttendance();
             if (typeof window.renderStaffMonthlySummary === "function") window.renderStaffMonthlySummary();
             if (typeof window.renderStaffSalaryDashboard === "function") window.renderStaffSalaryDashboard();
+            if (typeof window.loadSettingsIntoForm === "function") window.loadSettingsIntoForm();
+            if (typeof window.applyRestaurantBranding === "function") window.applyRestaurantBranding();
         } catch (error) {
             console.warn("Firebase hydration skipped:", error);
         }
