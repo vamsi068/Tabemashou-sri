@@ -155,8 +155,11 @@ function savePOSSettings(settings) {
         JSON.stringify(settings)
     );
 
-}
+    if (typeof window.syncSettingsToFirebase === "function") {
+        window.syncSettingsToFirebase(settings);
+    }
 
+}
 
 /* ---------------------------------------------------------
    OPEN SETTINGS TAB
