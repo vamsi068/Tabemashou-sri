@@ -43,6 +43,12 @@ function authGetUsers() {
 
 function authSaveUsers(users) {
     localStorage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
+
+    // Push login accounts (admin/manager/staff) up to Firebase, if firebase-sync.js
+    // is loaded on this page, so other devices can pick them up on next login.
+    if (typeof window.syncUsersToFirebase === "function") {
+        window.syncUsersToFirebase(users);
+    }
 }
 
 function authGetSession() {
