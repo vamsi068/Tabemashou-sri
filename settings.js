@@ -161,6 +161,7 @@ function savePOSSettings(settings) {
 
 }
 
+
 /* ---------------------------------------------------------
    OPEN SETTINGS TAB
 --------------------------------------------------------- */
@@ -395,19 +396,53 @@ function handleLogoFile(event) {
         event.target.value = "";
         return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-        alert("Please choose an image smaller than 2 MB.");
-        event.target.value = "";
-        return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-        pendingRestaurantLogo = reader.result;
-        updateLogoPreview(reader.result);
-    };
-    reader.readAsDataURL(file);
+    compressImageToDataURL(file).then(dataUrl => {
+        pendingRestaurantLogo = dataUrl;
+        updateLogoPreview(dataUrl);
+    }).catch(() => alert("Could not process that image."));
 }
 
+function saveRestaurantLogoOnly() {
+    const input = document.getElementById("settingRestaurantLogo");
+    if (!input || !input.files?.[0]) {
+        alert("Please select a logo image first.");
+        return;
+    }
+    compressImageToDataURL(input.files[0]).then(dataUrl => {
+        const settings = getPOSSettings();
+        settings.restaurant.logo = dataUrl;
+        pendingRestaurantLogo = dataUrl;
+        savePOSSettings(settings);
+        updateLogoPreview(dataUrl);
+        if (typeof applyRestaurantBranding === "function") applyRestaurantBranding();
+        alert("Restaurant logo saved successfully.");
+    }).catch(() => alert("Could not process that image."));
+}
+function compressImageToDataURL(file, maxDim = 300, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        const reader = new FileReader();
+        reader.onload = () => {
+            img.onload = () => {
+                let { width, height } = img;
+                if (width > maxDim || height > maxDim) {
+                    const scale = maxDim / Math.max(width, height);
+                    width = Math.round(width * scale);
+                    height = Math.round(height * scale);
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL("image/jpeg", quality)); // ~10-60KB typically
+            };
+            img.onerror = reject;
+            img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
 function removeRestaurantLogo() {
     const settings = getPOSSettings();
     settings.restaurant.logo = "";
@@ -420,25 +455,25 @@ function removeRestaurantLogo() {
     alert("Restaurant logo removed.");
 }
 
-function saveRestaurantLogoOnly() {
-    const input = document.getElementById("settingRestaurantLogo");
-    if (!input || !input.files?.[0]) {
-        alert("Please select a logo image first.");
-        return;
-    }
-    const file = input.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-        const settings = getPOSSettings();
-        settings.restaurant.logo = reader.result;
-        pendingRestaurantLogo = reader.result;
-        savePOSSettings(settings);
-        updateLogoPreview(reader.result);
-        if (typeof applyRestaurantBranding === "function") applyRestaurantBranding();
-        alert("Restaurant logo saved successfully.");
-    };
-    reader.readAsDataURL(file);
-}
+// function saveRestaurantLogoOnly() {
+//     const input = document.getElementById("settingRestaurantLogo");
+//     if (!input || !input.files?.[0]) {
+//         alert("Please select a logo image first.");
+//         return;
+//     }
+//     const file = input.files[0];
+//     const reader = new FileReader();
+//     reader.onload = () => {
+//         const settings = getPOSSettings();
+//         settings.restaurant.logo = reader.result;
+//         pendingRestaurantLogo = reader.result;
+//         savePOSSettings(settings);
+//         updateLogoPreview(reader.result);
+//         if (typeof applyRestaurantBranding === "function") applyRestaurantBranding();
+//         alert("Restaurant logo saved successfully.");
+//     };
+//     reader.readAsDataURL(file);
+// }
 
 /* ---------------------------------------------------------
    SAVE RESTAURANT SETTINGS
