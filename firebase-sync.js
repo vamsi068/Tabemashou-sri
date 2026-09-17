@@ -157,12 +157,13 @@
     // settings.js calls this every time savePOSSettings() runs, so any change made
     // on one device (restaurant info, tax rates, receipt text, expenses, etc.)
     // gets pushed up for other devices to pick up.
-    window.syncSettingsToFirebase = function (settings) {
-        if (!ready || !settings) return;
-        saveSingleDoc(COLLECTIONS.settings, SETTINGS_DOC_ID, settings).catch(error => {
-            console.warn("Settings Firebase sync failed:", error);
-        });
-    };
+   window.syncSettingsToFirebase = function (settings) {
+    if (!ready || !settings) return Promise.resolve();
+    return saveSingleDoc(COLLECTIONS.settings, SETTINGS_DOC_ID, settings).catch(error => {
+        console.warn("Settings Firebase sync failed:", error);
+        window.dispatchEvent(new CustomEvent("sriTabemashouSyncError", { detail: { collection: "settings", error } }));
+    });
+};
 
     window.deleteStaffFromFirebase = async function (staffId) {
         if (!ready || !db) return;
